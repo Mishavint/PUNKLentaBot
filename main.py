@@ -1,65 +1,119 @@
 import logging
-
 from config import TOKEN
-from telegram import Update, ForceReply, InlineQueryResultArticle, InputTextMessageContent
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, InlineQueryHandler
+
+from telegram import (
+    Update,
+    ForceReply,
+    InlineQueryResultArticle,
+    InputTextMessageContent,
+    ParseMode)
+
+from telegram.ext import (
+    Updater,
+    CommandHandler,
+    MessageHandler,
+    Filters,
+    CallbackContext,
+    InlineQueryHandler,
+    MessageFilter,
+    Defaults
+)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
 )
 
 logger = logging.getLogger(__name__)
-temp_list = [2]
 
 
-def start(update: Update, context: CallbackContext):
-    user = update.effective_user
-    update.message.reply_markdown_v2(
-        fr'Hi {user.mention_markdown_v2()}\!',
-        reply_markup=ForceReply(selective=True),
-    )
+### Texts ###
+def text_for_start(name):
+    return f"""
+Приветствую, {name}. Я чат-бот для поиска людей в ленте. Я был создан студентов Пунка для студентов Пунка
+        
+На данный момент это MVP(Minimal Viable Product). Так что доступны всего 2 команды:
+    
+/find_in_lenta
+/find_in_punk
+    """
 
 
-def help_command(update: Update, context: CallbackContext):
-    temp_list.append(temp_list[-1] + 1)
-    update.message.reply_text(f'Help!\n{temp_list[-1]}')
+def text_for_help():
+    return "help :D"
 
 
-def echo(update: Update, context: CallbackContext):
-    update.message.reply_text(update.message.text)
+######### start help commands #########
+def start_command(update: Update, context: CallbackContext):
+    name = update.message.chat.first_name
+    update.message.reply_text(text_for_start(name))
 
 
-def caps(update: Update, context: CallbackContext):
-    text_caps = ' '.join(context.args).upper()
-    context.bot.send_message(chat_id=update.effective_user.id, text=text_caps)
+def help_command(update, context):
+    return 3
 
 
-def inline_caps(update: Update, context: CallbackContext):
-    query = update.inline_query.query
-    if not query:
+#########  find people commands #########
+list_for_finders = list()
+list_for_couriers = list()
+
+
+def find_in_lenta(update: Update, context: CallbackContext):
+    if list_for_couriers.__contains__((update.message.chat.username, update.message.chat.id)):
+        update.message.reply_text("Вы уже в очереди")
         return
-    results = [InlineQueryResultArticle(
-        id=query.upper(),
-        title='Caps',
-        input_message_content=InputTextMessageContent(query.upper())
-    )]
-    context.bot.answer_inline_query(update.inline_query.id, results)
+
+    try:
+        courier = list_for_couriers.pop(0)
+        update.message.reply_text(f"Человек, который может вам помочь:@{courier[0]}")
+        context.bot.send_message(chat_id=courier[1],
+                                 text=f"Человек, который ищет помощь:@{update.message.chat.username}")
+    except IndexError:
+        list_for_finders.append((update.message.chat.username, update.message.chat.id))
+        update.message.reply_text(
+            f"По моим данным никого в Ленте сейчас нет. Вы добавлены в очередь. Ваша очередь: "
+            f"{list_for_finders.index((update.message.chat.username, update.message.chat_id)) + 1}"
+        )
 
 
-def unknown(update: Update, context: CallbackContext):
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text="Sorry, I didn't understand that command.")
+def find_in_punk(update: Update, context: CallbackContext):
+    if list_for_couriers.__contains__((update.message.chat.username, update.message.chat.id)):
+        update.message.reply_text("Вы уже в очереди")
+        return
+
+    try:
+        finder = list_for_finders.pop(0)
+        update.message.reply_text(f"Человек, который ищет помощь:@{finder[0]}")
+        context.bot.send_message(chat_id=finder[1],
+                                 text=f"Человек, который может вам помочь:@{update.message.chat.username}")
+    except IndexError:
+        list_for_couriers.append((update.message.chat.username, update.message.chat.id))
+        update.message.reply_text(
+            f"Никто не ищёт человека в ленте. Вы добавлены в очередь. Ваша очередь:"
+            f" {list_for_couriers.index((update.message.chat.username, update.message.chat.id)) + 1}")
 
 
+######### util #########
+def unknown_command(update: Update, context: CallbackContext):
+    update.message.reply_text("Такой комманды не существует :-(")
+
+
+def unknown_message(update: Update, context: CallbackContext):
+    update.message.reply_text("Не могу такое разобрать :-(")
+
+
+#########  main #########
 def main():
-    updater = Updater(TOKEN)
+    updater = Updater(TOKEN, use_context=True)
     dispatcher = updater.dispatcher
-    dispatcher.add_handler(CommandHandler("start", start))
+
+    dispatcher.add_handler(CommandHandler("start", start_command))
     dispatcher.add_handler(CommandHandler("help", help_command))
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
-    dispatcher.add_handler(CommandHandler("caps", caps))
-    dispatcher.add_handler(InlineQueryHandler(inline_caps))
-    dispatcher.add_handler(MessageHandler(Filters.command, unknown))
+    dispatcher.add_handler(CommandHandler("find_in_lenta", find_in_lenta))
+    dispatcher.add_handler(CommandHandler("find_in_punk", find_in_punk))
+    dispatcher.add_handler(MessageHandler(~Filters.command, unknown_message))
+
+    dispatcher.add_handler(MessageHandler(Filters.command, unknown_command))
+
     updater.start_polling()
     updater.idle()
 
