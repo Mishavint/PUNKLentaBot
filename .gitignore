@@ -130,3 +130,7 @@ dmypy.json
 
 # Pycharm
 .idea/
+
+
+# Files
+for_fun.py
