@@ -24,26 +24,12 @@ logger = logging.getLogger(__name__)
 temp_list = [2]
 
 
-######### Texts #########
-def text_for_start(name):
-    return f"""
-        Приветствую, {name}. Я чат бот для поиска людей в Ленте. Я был написан студентом Пунка для студентов Пунка.
-    """
-
-
-def start(update, context):
-    # user = update.effective_user
-    # user = update.message.from_user
-    # update.message.reply_markdown_v2(
-    #     text_for_start(user['username'])
-    #     # fr'Hi {user.mention_markdown_v2()}\!',
-    # )
-    chat_id = context.message.chat_id
-    first_name = context.message.chat.first_name
-    last_name = context.message.chat.last_name
-    username = context.message.chat.username
-    print("chat_id : {} and firstname : {} lastname : {}  username {}".format(chat_id, first_name, last_name, username))
-    update.sendMessage(chat_id, 'text')
+def start(update: Update, context: CallbackContext):
+    user = update.effective_user
+    update.message.reply_markdown_v2(
+        fr'Hi {user.mention_markdown_v2()}\!',
+        reply_markup=ForceReply(selective=True),
+    )
 
 
 def help_command(update: Update, context: CallbackContext):
