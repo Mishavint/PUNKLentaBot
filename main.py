@@ -55,7 +55,7 @@ def help_command(update, context):
     update.message.reply_text(text_for_help())
 
 
-#########  find people commands #########
+######### find people commands #########
 list_for_finders = list()
 list_for_couriers = list()
 
@@ -129,7 +129,7 @@ def is_in_lists(chat, update: Update):
     return False
 
 
-#########  main #########
+######### main #########
 def main():
     updater = Updater(TOKEN, use_context=True)
     dispatcher = updater.dispatcher
