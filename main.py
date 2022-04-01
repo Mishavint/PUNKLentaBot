@@ -1,14 +1,8 @@
 import logging
 from config import TOKEN
 
-from telegram import Update
-from telegram.ext import (
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-    CallbackContext,
-)
+from telegram import *
+from telegram.ext import *
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -69,13 +63,11 @@ def find_in_lenta(update: Update, context: CallbackContext):
         update.message.reply_text(f"Человек, который может вам помочь: @{courier[0]}")
         context.bot.send_message(chat_id=courier[1],
                                  text=f"Человек, который ищет помощь: @{update.message.chat.username}")
-        print(f"finders: {list_for_finders}\ncouriers: {list_for_couriers}")
     except IndexError:
         list_for_finders.append((update.message.chat.username, update.message.chat.id))
         update.message.reply_text(
             f"По моим данным никого в Ленте сейчас нет. Вы добавлены в очередь. Ваша очередь: "
             f"{list_for_finders.index((update.message.chat.username, update.message.chat_id)) + 1}")
-        print(f"finders: {list_for_finders}\ncouriers: {list_for_couriers}")
 
 
 def find_in_punk(update: Update, context: CallbackContext):
@@ -87,13 +79,11 @@ def find_in_punk(update: Update, context: CallbackContext):
         update.message.reply_text(f"Человек, который ищет помощь: @{finder[0]}")
         context.bot.send_message(chat_id=finder[1],
                                  text=f"Человек, который может вам помочь: @{update.message.chat.username}")
-        print(f"finders: {list_for_finders}\ncouriers: {list_for_couriers}")
     except IndexError:
         list_for_couriers.append((update.message.chat.username, update.message.chat.id))
         update.message.reply_text(
             f"Никто не ищёт человека в ленте. Вы добавлены в очередь. Ваша очередь:"
             f" {list_for_couriers.index((update.message.chat.username, update.message.chat.id)) + 1}")
-        print(f"finders: {list_for_finders}\ncouriers: {list_for_couriers}")
 
 
 def remove_from_list(update: Update, context: CallbackContext):
@@ -110,13 +100,37 @@ def remove_from_list(update: Update, context: CallbackContext):
             update.message.reply_text("Вас нет ни в какой очереди")
 
 
+def menu(upadte: Update, context: CallbackContext):
+    buttons = [
+        [KeyboardButton("Готов помочь🛒", callback_data="/start"),
+         KeyboardButton("Ищу помощь🏬", callvack_data=help_command)]
+    ]
+    upadte.message.reply_text(text="Главное меню", reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True))
+
+
+def button(update: Update, context: CallbackContext) -> None:
+    """Parses the CallbackQuery and updates the message text."""
+    query = update.callback_query
+
+    # CallbackQueries need to be answered, even if no notification to the user is needed
+    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
+    query.answer()
+
+    query.edit_message_text(text=f"Selected option: {query.data}")
+
+
 ######### util #########
 def unknown_command(update: Update, context: CallbackContext):
-    update.message.reply_text("Такой комманды не существует :-(")
+    update.message.reply_text("Такой команды не существует :-(")
 
 
-def unknown_message(update: Update, context: CallbackContext):
-    update.message.reply_text("Не могу такое разобрать :-(")
+def message(update: Update, context: CallbackContext):
+    if "готов помочь🛒" in update.message.text.lower():
+        find_in_punk(update, context)
+    elif "ищу помощь🏬" in update.message.text.lower():
+        find_in_lenta(update, context)
+    else:
+        update.message.reply_text("Не могу такое разобрать :-(")
 
 
 def is_in_lists(chat, update: Update):
@@ -139,8 +153,10 @@ def main():
     dispatcher.add_handler(CommandHandler("find_in_lenta", find_in_lenta))
     dispatcher.add_handler(CommandHandler("find_in_punk", find_in_punk))
     dispatcher.add_handler(CommandHandler("clear", remove_from_list))
-    dispatcher.add_handler(MessageHandler(~Filters.command, unknown_message))
+    dispatcher.add_handler(CommandHandler("menu", menu))
+    dispatcher.add_handler(CallbackQueryHandler(button))
 
+    dispatcher.add_handler(MessageHandler(~Filters.command, message))
     dispatcher.add_handler(MessageHandler(Filters.command, unknown_command))
 
     updater.start_polling()
