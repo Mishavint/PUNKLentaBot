@@ -134,3 +134,4 @@ dmypy.json
 
 # Files
 for_fun.py
+__pycache__
