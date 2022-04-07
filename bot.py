@@ -17,7 +17,7 @@ def text_for_start(name):
     return f"""
 Приветствую, {name}. Я чат-бот для поиска людей в ленте. Я был создан студентом Пунка для студентов Пунка
 
-На данный момент это MVP(Minimal Viable Product). Так что доступна всего 1 команды:
+На данный момент это MVP(Minimal Viable Product). Так что доступна всего 1 команда:
 
 /menu - главное меню, с помощью него можно найти человека или помочь кому-то
 
@@ -29,7 +29,7 @@ def text_for_help():
     return """
 Бот создан @mishavint. Со всеми вопросами и пожеланиями писать ему (Умоляю не ночью).    
 
-На данный момент это MVP(Minimal Viable Product). Так что доступна всего 1 команды:
+На данный момент это MVP(Minimal Viable Product). Так что доступна всего 1 команда:
 
 /menu - главное меню, с помощью него можно найти человека или помочь кому-то
 
@@ -65,6 +65,7 @@ def find_in_lenta(update: Update, context: CallbackContext):
         update.message.reply_text(f"Человек, который может вам помочь: @{courier[0]}")
         context.bot.send_message(chat_id=courier[1],
                                  text=f"Человек, который ищет помощь: @{update.message.chat.username}")
+        context.bot.send_message(chat_id=courier[1], text=f"Главное меню")
     except IndexError:
         button = [[KeyboardButton("Отменить поиск🔎")]]
         list_for_finders.append((update.message.chat.username, update.message.chat.id))
@@ -83,6 +84,7 @@ def find_in_punk(update: Update, context: CallbackContext):
         update.message.reply_text(f"Человек, который ищет помощь: @{finder[0]}")
         context.bot.send_message(chat_id=finder[1],
                                  text=f"Человек, который может вам помочь: @{update.message.chat.username}")
+        context.bot.send_message(chat_id=finder[1], text=f"Главное меню")
     except IndexError:
         button = [[KeyboardButton("Отменить поиск🔎")]]
         list_for_couriers.append((update.message.chat.username, update.message.chat.id))
@@ -131,6 +133,8 @@ def message(update: Update, context: CallbackContext):
         remove_from_list(update, context)
     elif "помощь по боту🆘" in update.message.text.lower():
         help_command(update, context)
+    elif "главное меню" in update.message.text.lower():
+        main_menu(update, context)
     else:
         update.message.reply_text("Не могу такое разобрать :-(")
 
