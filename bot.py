@@ -51,6 +51,15 @@ def help_command(update: Update, context: CallbackContext):
     update.message.reply_text(text_for_help())
 
 
+######### buttons #########
+main_menu_buttons = [
+    [KeyboardButton("Готов помочь 🛒"),
+     KeyboardButton("Ищу помощь 🏬")],
+    [KeyboardButton("Помощь по боту 🆘")]
+]
+
+search_button = [[KeyboardButton("Отменить поиск 🔎")]]
+
 ######### find people commands #########
 list_for_finders = list()
 list_for_couriers = list()
@@ -60,52 +69,38 @@ def find_in_lenta(update: Update, context: CallbackContext):
     if is_in_lists(update.message.chat, update):
         return
 
-    buttons = [
-        [KeyboardButton("Готов помочь 🛒"),
-         KeyboardButton("Ищу помощь 🏬")],
-        [KeyboardButton("Помощь по боту 🆘")]
-    ]
-
     try:
         courier = list_for_couriers.pop(0)
         update.message.reply_text(f"Человек, который может вам помочь: @{courier[0]}")
         context.bot.send_message(chat_id=courier[1],
                                  text=f"Человек, который ищет помощь: @{update.message.chat.username}",
-                                 reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True))
+                                 reply_markup=ReplyKeyboardMarkup(main_menu_buttons, resize_keyboard=True))
         main_menu(update, context)
     except IndexError:
-        button = [[KeyboardButton("Отменить поиск 🔎")]]
         list_for_finders.append((update.message.chat.username, update.message.chat.id))
         update.message.reply_text(
             f"По моим данным никого в Ленте сейчас нет. Вы добавлены в очередь. Ваша очередь: "
             f"{list_for_finders.index((update.message.chat.username, update.message.chat_id)) + 1}",
-            reply_markup=ReplyKeyboardMarkup(button, resize_keyboard=True))
+            reply_markup=ReplyKeyboardMarkup(search_button, resize_keyboard=True))
 
 
 def find_in_punk(update: Update, context: CallbackContext):
     if is_in_lists(update.message.chat, update):
         return
 
-    buttons = [
-        [KeyboardButton("Готов помочь 🛒"),
-         KeyboardButton("Ищу помощь 🏬")],
-        [KeyboardButton("Помощь по боту 🆘")]
-    ]
-    
     try:
         finder = list_for_finders.pop(0)
         update.message.reply_text(f"Человек, который ищет помощь: @{finder[0]}")
         context.bot.send_message(chat_id=finder[1],
                                  text=f"Человек, который может вам помочь: @{update.message.chat.username}",
-                                 reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True))
+                                 reply_markup=ReplyKeyboardMarkup(main_menu_buttons, resize_keyboard=True))
         main_menu(update, context)
     except IndexError:
-        button = [[KeyboardButton("Отменить поиск 🔎")]]
         list_for_couriers.append((update.message.chat.username, update.message.chat.id))
         update.message.reply_text(
             f"По моим данным никто не ищет человека в ленте. Вы добавлены в очередь. Ваша очередь:"
             f" {list_for_couriers.index((update.message.chat.username, update.message.chat.id)) + 1}",
-            reply_markup=ReplyKeyboardMarkup(button, resize_keyboard=True))
+            reply_markup=ReplyKeyboardMarkup(search_button, resize_keyboard=True))
 
 
 def remove_from_list(update: Update, context: CallbackContext):
@@ -125,12 +120,8 @@ def remove_from_list(update: Update, context: CallbackContext):
 
 ######### menu #########
 def main_menu(update: Update, context: CallbackContext):
-    buttons = [
-        [KeyboardButton("Готов помочь 🛒"),
-         KeyboardButton("Ищу помощь 🏬")],
-        [KeyboardButton("Помощь по боту 🆘")]
-    ]
-    update.message.reply_text(text="Главное меню", reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True))
+    update.message.reply_text(text="Главное меню",
+                              reply_markup=ReplyKeyboardMarkup(main_menu_buttons, resize_keyboard=True))
 
 
 ######### util #########
@@ -154,14 +145,13 @@ def message(update: Update, context: CallbackContext):
 
 
 def is_in_lists(chat, update: Update):
-    button = [[KeyboardButton("Отменить поиск 🔎")]]
     if list_for_finders.__contains__((chat.username, chat.id)):
         update.message.reply_text("Вы уже в списке на поиск курьера",
-                                  reply_markup=ReplyKeyboardMarkup(button, resize_keyboard=True))
+                                  reply_markup=ReplyKeyboardMarkup(search_button, resize_keyboard=True))
         return True
     if list_for_couriers.__contains__((chat.username, chat.id)):
         update.message.reply_text("Вы уже в списке курьеров",
-                                  reply_markup=ReplyKeyboardMarkup(button, resize_keyboard=True))
+                                  reply_markup=ReplyKeyboardMarkup(search_button, resize_keyboard=True))
         return True
     return False
 
