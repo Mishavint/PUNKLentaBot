@@ -158,7 +158,7 @@ def is_in_lists(chat, update: Update):
 
 ######### main #########
 def main():
-    updater = Updater(TOKEN, use_context=True)
+    updater = Updater(input("Please, enter tour token: "), use_context=True)
     dispatcher = updater.dispatcher
 
     dispatcher.add_handler(CommandHandler("start", start_command))
