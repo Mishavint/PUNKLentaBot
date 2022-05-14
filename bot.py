@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import logging
+from getpass import getpass
 from config import TOKEN
 
 from telegram import *
@@ -17,7 +18,7 @@ def text_for_start(name):
     return f"""
 Приветствую, {name}. Я чат-бот для поиска людей в ленте. Я был создан студентом Пунка для студентов Пунка
 
-На данный момент это MVP(Minimal Viable Product). Так что доступна всего 1 команда:
+На данный момент это MVP(Minimum Viable Product). Так что доступна всего 1 команда:
 
 /menu - главное меню, с помощью него можно найти человека или помочь кому-то
 
@@ -29,7 +30,7 @@ def text_for_help():
     return """
 Бот создан @mishavint. Со всеми вопросами и пожеланиями писать ему (Умоляю не ночью).    
 
-На данный момент это MVP(Minimal Viable Product). Так что доступна всего 1 команда:
+На данный момент это MVP(Minimum Viable Product). Так что доступна всего 1 команда:
 
 /menu - главное меню, с помощью него можно найти человека или помочь кому-то
 
@@ -45,6 +46,7 @@ def text_for_help():
 def start_command(update: Update, context: CallbackContext):
     name = update.message.chat.first_name
     update.message.reply_text(text_for_start(name))
+    logger.info(f"{update.message.chat.username} has started bot")
 
 
 def help_command(update: Update, context: CallbackContext):
@@ -75,6 +77,7 @@ def find_in_lenta(update: Update, context: CallbackContext):
         context.bot.send_message(chat_id=courier[1],
                                  text=f"Человек, который ищет помощь: @{update.message.chat.username}",
                                  reply_markup=ReplyKeyboardMarkup(main_menu_buttons, resize_keyboard=True))
+        logger.info(f"[{update.message.chat.username}] found [{courier[0]}]")
         main_menu(update, context)
     except IndexError:
         list_for_finders.append((update.message.chat.username, update.message.chat.id))
@@ -82,6 +85,7 @@ def find_in_lenta(update: Update, context: CallbackContext):
             f"По моим данным никого в Ленте сейчас нет. Вы добавлены в очередь. Ваша очередь: "
             f"{list_for_finders.index((update.message.chat.username, update.message.chat_id)) + 1}",
             reply_markup=ReplyKeyboardMarkup(search_button, resize_keyboard=True))
+        logger.info(f"[{update.message.chat.username}] was added to finders list")
 
 
 def find_in_punk(update: Update, context: CallbackContext):
@@ -94,6 +98,7 @@ def find_in_punk(update: Update, context: CallbackContext):
         context.bot.send_message(chat_id=finder[1],
                                  text=f"Человек, который может вам помочь: @{update.message.chat.username}",
                                  reply_markup=ReplyKeyboardMarkup(main_menu_buttons, resize_keyboard=True))
+        logger.info(f"[{finder[0]}] found [{update.message.chat.username}]")
         main_menu(update, context)
     except IndexError:
         list_for_couriers.append((update.message.chat.username, update.message.chat.id))
@@ -101,20 +106,24 @@ def find_in_punk(update: Update, context: CallbackContext):
             f"По моим данным никто не ищет человека в ленте. Вы добавлены в очередь. Ваша очередь:"
             f" {list_for_couriers.index((update.message.chat.username, update.message.chat.id)) + 1}",
             reply_markup=ReplyKeyboardMarkup(search_button, resize_keyboard=True))
+        logger.info(f"[{update.message.chat.username}] was added to couriers list")
 
 
 def remove_from_list(update: Update, context: CallbackContext):
     try:
         list_for_finders.remove((update.message.chat.username, update.message.chat.id))
         update.message.reply_text("Вы были успешно удалены из списка людей, которые ищут курьера")
+        logger.info(f"[{update.message.chat.username}] was deleted from finders list")
         main_menu(update, context)
     except ValueError:
         try:
             list_for_couriers.remove((update.message.chat.username, update.message.chat.id))
             update.message.reply_text("Вы были успешно удалены из списка людей, которые сейчас в ленте")
+            logger.info(f"[{update.message.chat.username}] was deleted from couriers list")
             main_menu(update, context)
         except ValueError:
             update.message.reply_text("Вас нет ни в какой очереди")
+            logger.info(f"[{update.message.chat.username}] was not in lists")
             main_menu(update, context)
 
 
@@ -156,9 +165,13 @@ def is_in_lists(chat, update: Update):
     return False
 
 
+def log(msg):
+    logger.info(f"{msg}")
+
+
 ######### main #########
 def main():
-    updater = Updater(input("Please, enter tour token: "), use_context=True)
+    updater = Updater(getpass("Please, enter tour token: "), use_context=True)
     dispatcher = updater.dispatcher
 
     dispatcher.add_handler(CommandHandler("start", start_command))
